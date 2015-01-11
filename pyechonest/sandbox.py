@@ -14,31 +14,31 @@ except ImportError:
     import simplejson as json
 import datetime
 
-import util
-from proxies import ResultList
+from . import util
+from .proxies import ResultList
 
 def list(sandbox_name, results=15, start=0):
     """
     Returns a list of all assets available in this sandbox
-    
+
     Args:
         sandbox_name (str): A string representing the name of the sandbox
 
     Kwargs:
         results (int): An integer number of results to return
-        
+
         start (int): An integer starting value for the result set
-        
+
     Returns:
         A list of asset dictionaries
-    
+
     Example:
 
     >>> sandbox.list('bluenote')
     [{}, {}]
-    >>> 
+    >>>
 
-    
+
     """
     result = util.callm("%s/%s" % ('sandbox', 'list'), {'sandbox':sandbox_name, 'results': results, 'start': start})
     assets = result['response']['assets']
@@ -46,7 +46,7 @@ def list(sandbox_name, results=15, start=0):
     total = result['response']['total']
 
     return ResultList(assets, start, total)
-    
+
 
 def access(sandbox_name, asset_ids):
     """
@@ -58,18 +58,17 @@ def access(sandbox_name, asset_ids):
         asset_ids (list): A list of asset_ids (str) to fetch
 
     Kwargs:
-        
+
     Returns:
         A list of asset dictionaries
-    
+
     Example:
 
     >>> sandbox.access('bluenote', ['12345'])
     [{}, {}]
-    >>> 
+    >>>
 
-    
+
     """
     result = util.oauthgetm("%s/%s" % ('sandbox', 'access'), {'sandbox':sandbox_name, 'id':asset_ids})
     return  result['response']['assets']
-    

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 from pyechonest import song
 
@@ -12,12 +13,10 @@ def get_tempo(artist, title):
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print "Usage: python tempo.py 'artist name' 'song title'"
+        print("Usage: python tempo.py 'artist name' 'song title'")
     else:
         tempo = get_tempo(sys.argv[1], sys.argv[2])
         if tempo:
-            print 'Tempo for', sys.argv[1], sys.argv[2], 'is', tempo
+            print('Tempo for', sys.argv[1], sys.argv[2], 'is', tempo)
         else:
-            print "Can't find Tempo for artist:", sys.argv[1], 'song:', sys.argv[2]
-        
-
+            print("Can't find Tempo for artist:", sys.argv[1], 'song:', sys.argv[2])

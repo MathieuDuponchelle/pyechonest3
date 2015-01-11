@@ -9,10 +9,10 @@ The Playlist module loosely covers http://developer.echonest.com/docs/v4/playlis
 Refer to the official api documentation if you are unsure about something.
 """
 
-import util
-from proxies import PlaylistProxy
-from song import Song
-import catalog
+from . import util
+from .proxies import PlaylistProxy
+from .song import Song
+from . import catalog
 import logging
 logger = logging.getLogger(__name__)
 
@@ -20,28 +20,28 @@ logger = logging.getLogger(__name__)
 def basic(type='artist-radio', artist_id=None, artist=None, song_id=None, song=None, track_id=None, dmca=False,
           results=15, buckets=None, limit=False,genres=None,):
     """Get a basic playlist
-    
+
     Args:
-    
+
     Kwargs:
         type (str): a string representing the playlist type ('artist-radio' or 'song-radio')
-        
+
         artist_id (str): the artist_id to seed the playlist
-        
+
         artist (str): the name of an artist to seed the playlist
-        
+
         song_id (str): a song_id to seed the playlist
-        
+
         song (str): the name of a song to seed the playlist
-        
+
         track_id (str): the name of a track to seed the playlist
-        
+
         dmca (bool): make the playlist dmca-compliant
-        
+
         results (int): desired length of the playlist
-        
+
         buckets (list): A list of strings specifying which buckets to retrieve
-        
+
         limit (bool): Whether results should be restricted to any idspaces given in the buckets parameter
     """
 
@@ -69,96 +69,96 @@ def static(type='artist', artist_pick='song_hotttnesss-desc', variety=.5, artist
            artist_start_year_after=None, artist_start_year_before=None, artist_end_year_after=None,
            artist_end_year_before=None, dmca=False, distribution=None, song_type=None, genres=None):
     """Get a static playlist
-    
+
     Args:
-    
+
     Kwargs:
         type (str): a string representing the playlist type ('artist', 'artist-radio', ...)
-        
+
         artist_pick (str): How songs should be chosen for each artist
-        
+
         variety (float): A number between 0 and 1 specifying the variety of the playlist
-        
+
         artist_id (str): the artist_id
-        
+
         artist (str): the name of an artist
-        
+
         song_id (str): the song_id
-        
+
         track_id (str): the track id
-        
+
         description (str): A string describing the artist and song
-        
+
         style (str): A string describing the style/genre of the artist and song
-    
+
         mood (str): A string describing the mood of the artist and song
-        
+
         results (int): An integer number of results to return
-    
+
         max_tempo (float): The max tempo of song results
-    
+
         min_tempo (float): The min tempo of song results
-    
+
         max_duration (float): The max duration of song results
-    
+
         min_duration (float): The min duration of song results
-    
+
         max_loudness (float): The max loudness of song results
-    
+
         min_loudness (float): The min loudness of song results
-    
+
         artist_max_familiarity (float): A float specifying the max familiarity of artists to search for
-    
+
         artist_min_familiarity (float): A float specifying the min familiarity of artists to search for
-    
+
         artist_max_hotttnesss (float): A float specifying the max hotttnesss of artists to search for
-    
+
         artist_min_hotttnesss (float): A float specifying the max hotttnesss of artists to search for
-    
+
         song_max_hotttnesss (float): A float specifying the max hotttnesss of songs to search for
-    
+
         song_min_hotttnesss (float): A float specifying the max hotttnesss of songs to search for
-    
+
         max_energy (float): The max energy of song results
-    
+
         min_energy (float): The min energy of song results
-    
+
         max_danceability (float): The max danceability of song results
-    
+
         min_danceability (float): The min danceability of song results
-    
+
         mode (int): 0 or 1 (minor or major)
-    
+
         key (int): 0-11 (c, c-sharp, d, e-flat, e, f, f-sharp, g, a-flat, a, b-flat, b)
-    
+
         max_latitude (float): A float specifying the max latitude of artists to search for
-    
+
         min_latitude (float): A float specifying the min latitude of artists to search for
-    
+
         max_longitude (float): A float specifying the max longitude of artists to search for
-    
-        min_longitude (float): A float specifying the min longitude of artists to search for                        
-        
+
+        min_longitude (float): A float specifying the min longitude of artists to search for
+
         adventurousness (float): A float ranging from 0 for old favorites to 1.0 for unheard music according to a seed_catalog
-    
+
         sort (str): A string indicating an attribute and order for sorting the results
-    
+
         buckets (list): A list of strings specifying which buckets to retrieve
-    
+
         limit (bool): A boolean indicating whether or not to limit the results to one of the id spaces specified in buckets
-        
+
         seed_catalog (str or Catalog): An Artist Catalog object or Artist Catalog id to use as a seed
-        
+
         source_catalog (str or Catalog): A Catalog object or catalog id
 
-        rank_type (str): A string denoting the desired ranking for description searches, either 'relevance' or 'familiarity'    
-        
+        rank_type (str): A string denoting the desired ranking for description searches, either 'relevance' or 'familiarity'
+
         artist_start_year_before (int): Returned song's artists will have started recording music before this year.
-        
+
         artist_start_year_after (int): Returned song's artists will have started recording music after this year.
-        
+
         artist_end_year_before (int): Returned song's artists will have stopped recording music before this year.
-        
+
         artist_end_year_after (int): Returned song's artists will have stopped recording music after this year.
 
         distribution (str): Affects the range of artists returned and how many songs each artist will have in the playlist relative to how similar they are to the seed. (wandering, focused)
@@ -168,9 +168,9 @@ def static(type='artist', artist_pick='song_hotttnesss-desc', variety=.5, artist
 
     Returns:
         A list of Song objects
-    
+
     Example:
-    
+
     >>> p = playlist.static(type='artist-radio', artist=['ida maria', 'florence + the machine'])
     >>> p
     [<song - Pickpocket>,
@@ -188,7 +188,7 @@ def static(type='artist', artist_pick='song_hotttnesss-desc', variety=.5, artist
      <song - Keep Your Head>,
      <song - One More Time>,
      <song - Knights in Mountain Fox Jackets>]
-    >>> 
+    >>>
 
     """
     limit = str(limit).lower()

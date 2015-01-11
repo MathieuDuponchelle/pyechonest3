@@ -7,10 +7,29 @@ Created by Tyler Williams on 2010-04-25.
 
 Utility functions to support the Echo Nest web API interface.
 """
-import urllib
-import urllib2
-import httplib
-import config
+import sys
+if sys.version_info < (3, 0):
+    import urllib
+    import urllib2
+    import httplib
+    from types import StringType, UnicodeType
+    BaseHandler = urllib2.BaseHandler
+    urlencode = urllib.urlencode
+    urlopen = urllib2.urlopen
+    HTTPErrorProcessor = urllib2.HTTPErrorProcessor
+    HTTPConnection = httplib.HTTPConnection
+    build_opener = urllib2.build_opener
+else:
+    import urllib.request
+    import urllib.parse
+    import http.client
+    BaseHandler = urllib.request.BaseHandler
+    urlencode = urllib.parse.urlencode
+    urlopen = urllib.request.urlopen
+    HTTPErrorProcessor = urllib.request.HTTPErrorProcessor
+    HTTPConnection = http.client.HTTPConnection
+    build_opener = urllib.request.build_opener
+from . import config
 import logging
 import socket
 import re
@@ -18,7 +37,6 @@ import time
 import os
 import subprocess
 import traceback
-from types import StringType, UnicodeType
 
 try:
     import json
@@ -43,14 +61,14 @@ short_regex = re.compile(r'^((%s)[0-9A-Z]{16})\^?([0-9\.]+)?' % r'|'.join(n[0] f
 long_regex = re.compile(r'music://id.echonest.com/.+?/(%s)/(%s)[0-9A-Z]{16}\^?([0-9\.]+)?' % (r'|'.join(n[0] for n in TYPENAMES), r'|'.join(n[0] for n in TYPENAMES)))
 headers = [('User-Agent', 'Pyechonest %s' % (config.__version__,))]
 
-class MyBaseHandler(urllib2.BaseHandler):
+class MyBaseHandler(BaseHandler):
     def default_open(self, request):
         if config.TRACE_API_CALLS:
             logger.info("%s" % (request.get_full_url(),))
         request.start_time = time.time()
         return None
-        
-class MyErrorProcessor(urllib2.HTTPErrorProcessor):
+
+class MyErrorProcessor(HTTPErrorProcessor):
     def http_response(self, request, response):
         code = response.code
         if config.TRACE_API_CALLS:
@@ -58,9 +76,9 @@ class MyErrorProcessor(urllib2.HTTPErrorProcessor):
         if code/100 in (2, 4, 5):
             return response
         else:
-            urllib2.HTTPErrorProcessor.http_response(self, request, response)
+            HTTPErrorProcessor.http_response(self, request, response)
 
-opener = urllib2.build_opener(MyBaseHandler(), MyErrorProcessor())
+opener = build_opener(MyBaseHandler(), MyErrorProcessor())
 opener.addheaders = headers
 
 class EchoNestException(Exception):
@@ -113,7 +131,10 @@ def get_successful_response(raw_json):
         http_status = None
     raw_json = raw_json.read()
     try:
-        response_dict = json.loads(raw_json)
+        if sys.version_info < (3, 0):
+            response_dict = json.loads(raw_json)
+        else:
+            response_dict = json.loads(raw_json.decode())
         status_dict = response_dict['response']['status']
         code = int(status_dict['code'])
         message = status_dict['message']
@@ -129,10 +150,10 @@ def get_successful_response(raw_json):
 
 def callm(method, param_dict, POST=False, socket_timeout=None, data=None):
     """
-    Call the api! 
+    Call the api!
     Param_dict is a *regular* *python* *dictionary* so if you want to have multi-valued params
     put them in a list.
-    
+
     ** note, if we require 2.6, we can get rid of this timeout munging.
     """
     try:
@@ -141,15 +162,15 @@ def callm(method, param_dict, POST=False, socket_timeout=None, data=None):
         if not socket_timeout:
             socket_timeout = config.CALL_TIMEOUT
 
-        for key,val in param_dict.iteritems():
+        for key,val in list(param_dict.items()):
             if isinstance(val, list):
                 param_list.extend( [(key,subval) for subval in val] )
             elif val is not None:
-                if isinstance(val, unicode):
+                if isinstance(val, str):
                     val = val.encode('utf-8')
                 param_list.append( (key,val) )
 
-        params = urllib.urlencode(param_list)
+        params = urlencode(param_list)
 
         orig_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(socket_timeout)
@@ -164,7 +185,7 @@ def callm(method, param_dict, POST=False, socket_timeout=None, data=None):
 
                 if data is None:
                     data = ''
-                data = urllib.urlencode(data)
+                data = urlencode(data)
                 data = "&".join([data, params])
 
                 f = opener.open(url, data=data)
@@ -184,7 +205,7 @@ def callm(method, param_dict, POST=False, socket_timeout=None, data=None):
 
                 if config.TRACE_API_CALLS:
                     logger.info("%s/%s" % (host+':'+str(port), url,))
-                conn = httplib.HTTPConnection(host, port = port)
+                conn = HTTPConnection(host, port = port)
                 conn.request('POST', url, body = data, headers = dict([('Content-Type', 'application/octet-stream')]+headers))
                 f = conn.getresponse()
 
@@ -203,7 +224,7 @@ def callm(method, param_dict, POST=False, socket_timeout=None, data=None):
         response_dict = get_successful_response(f)
         return response_dict
 
-    except IOError, e:
+    except IOError as e:
         if hasattr(e, 'reason'):
             raise EchoNestIOError(error=e.reason)
         elif hasattr(e, 'code'):
@@ -218,10 +239,10 @@ def oauthgetm(method, param_dict, socket_timeout=None):
         raise Exception("You must install the python-oauth2 library to use this method.")
 
     """
-    Call the api! With Oauth! 
+    Call the api! With Oauth!
     Param_dict is a *regular* *python* *dictionary* so if you want to have multi-valued params
     put them in a list.
-    
+
     ** note, if we require 2.6, we can get rid of this timeout munging.
     """
     def build_request(url):
@@ -232,27 +253,27 @@ def oauthgetm(method, param_dict, socket_timeout=None):
             }
         consumer = oauth2.Consumer(key=config.ECHO_NEST_CONSUMER_KEY, secret=config.ECHO_NEST_SHARED_SECRET)
         params['oauth_consumer_key'] = config.ECHO_NEST_CONSUMER_KEY
-        
+
         req = oauth2.Request(method='GET', url=url, parameters=params)
         signature_method = oauth2.SignatureMethod_HMAC_SHA1()
         req.sign_request(signature_method, consumer, None)
         return req
-    
+
     param_dict['api_key'] = config.ECHO_NEST_API_KEY
     param_list = []
     if not socket_timeout:
         socket_timeout = config.CALL_TIMEOUT
-    
-    for key,val in param_dict.iteritems():
+
+    for key,val in list(param_dict.items()):
         if isinstance(val, list):
             param_list.extend( [(key,subval) for subval in val] )
         elif val is not None:
-            if isinstance(val, unicode):
+            if isinstance(val, str):
                 val = val.encode('utf-8')
             param_list.append( (key,val) )
 
-    params = urllib.urlencode(param_list)
-    
+    params = urlencode(param_list)
+
     orig_timeout = socket.getdefaulttimeout()
     socket.setdefaulttimeout(socket_timeout)
     """
@@ -262,9 +283,9 @@ def oauthgetm(method, param_dict, socket_timeout=None):
                                      method, params)
     req = build_request(url)
     f = opener.open(req.to_url())
-            
+
     socket.setdefaulttimeout(orig_timeout)
-    
+
     # try/except
     response_dict = get_successful_response(f)
     return response_dict
@@ -274,19 +295,19 @@ def postChunked(host, selector, fields, files):
     """
     Attempt to replace postMultipart() with nearly-identical interface.
     (The files tuple no longer requires the filename, and we only return
-    the response body.) 
-    Uses the urllib2_file.py originally from 
-    http://fabien.seisen.org which was also drawn heavily from 
+    the response body.)
+    Uses the urllib2_file.py originally from
+    http://fabien.seisen.org which was also drawn heavily from
     http://code.activestate.com/recipes/146306/ .
-    
-    This urllib2_file.py is more desirable because of the chunked 
-    uploading from a file pointer (no need to read entire file into 
-    memory) and the ability to work from behind a proxy (due to its 
+
+    This urllib2_file.py is more desirable because of the chunked
+    uploading from a file pointer (no need to read entire file into
+    memory) and the ability to work from behind a proxy (due to its
     basis on urllib2).
     """
-    params = urllib.urlencode(fields)
+    params = urlencode(fields)
     url = 'http://%s%s?%s' % (host, selector, params)
-    u = urllib2.urlopen(url, files)
+    u = urlopen(url, files)
     result = u.read()
     [fp.close() for (key, fp) in files]
     return result
@@ -295,7 +316,7 @@ def postChunked(host, selector, fields, files):
 def fix(x):
     # we need this to fix up all the dict keys to be strings, not unicode objects
     assert(isinstance(x,dict))
-    return dict((str(k), v) for (k,v) in x.iteritems())
+    return dict((str(k), v) for (k,v) in list(x.items()))
 
 
 def map_idspace(input_idspace):

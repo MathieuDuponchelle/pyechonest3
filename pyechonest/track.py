@@ -1,12 +1,21 @@
-import urllib2
+import sys
+if sys.version_info < (3, 0):
+    import urllib2
+    urlopen = urllib2.urlopen
+    HTTPError = urllib2.HTTPError
+else:
+    import urllib.request
+    import urllib.error
+    urlopen = urllib.request.urlopen
+    HTTPError = urllib.error.HTTPError
 try:
     import json
 except ImportError:
     import simplejson as json
 
 import hashlib
-from proxies import TrackProxy
-import util
+from .proxies import TrackProxy
+from . import util
 import time
 
 # Seconds to wait for asynchronous track/upload or track/analyze jobs to complete.
@@ -43,7 +52,7 @@ class Track(TrackProxy):
         valence                 float: a range from negative to positive emotional content (0.0 to 1.0)
 
     The following attributes are available only after calling Track.get_analysis():
-    
+
         analysis_channels       int: the number of audio channels used during analysis
         analysis_sample_rate    int: the sample rate used during analysis
         bars                    list of dicts: timing of each measure
@@ -69,7 +78,7 @@ class Track(TrackProxy):
         tatums                  list of dicts: the smallest metrical unit (subdivision of a beat)
         tempo_confidence        float: confidence that tempo detection was accurate
         time_signature_confidence float: confidence that time_signature detection was accurate
-    
+
     Each bar, beat, section, segment and tatum has a start time, a duration, and a confidence,
     in addition to whatever other data is given.
 
@@ -113,23 +122,23 @@ class Track(TrackProxy):
 
     def __str__(self):
         return self.title.encode('utf-8')
-        
+
     def get_analysis(self):
-        """ Retrieve the detailed analysis for the track, if available. 
+        """ Retrieve the detailed analysis for the track, if available.
             Raises Exception if unable to create the detailed analysis. """
         if self.analysis_url:
             try:
                 # Try the existing analysis_url first. This expires shortly
                 # after creation.
                 try:
-                    json_string = urllib2.urlopen(self.analysis_url).read()
-                except urllib2.HTTPError:
+                    json_string = urlopen(self.analysis_url).read()
+                except HTTPError:
                     # Probably the analysis_url link has expired. Refresh it.
                     param_dict = dict(id = self.id)
                     new_track = _profile(param_dict, DEFAULT_ASYNC_TIMEOUT)
                     if new_track and new_track.analysis_url:
                         self.analysis_url = new_track.analysis_url
-                        json_string = urllib2.urlopen(self.analysis_url).read()
+                        json_string = urlopen(self.analysis_url).read()
                     else:
                         raise Exception("Failed to create track analysis.")
 

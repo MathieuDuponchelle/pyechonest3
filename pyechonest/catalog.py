@@ -15,9 +15,9 @@ except ImportError:
 import datetime
 
 import warnings
-import util
-from proxies import CatalogProxy, ResultList
-import artist, song
+from . import util
+from .proxies import CatalogProxy, ResultList
+from . import artist, song
 
 # deal with datetime in json
 dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
@@ -28,7 +28,7 @@ def create_catalog_by_name(name, T="general"):
 
     Create a catalog object like
     """
-    result = util.callm("catalog/create", {}, POST=True, 
+    result = util.callm("catalog/create", {}, POST=True,
                             data={"name":name, "type":T})
     result = result['response']
     return Catalog(result['id'], **dict( (k,result[k]) for k in ('name', 'type')))
@@ -376,7 +376,7 @@ class Catalog(CatalogProxy):
 
     def rate(self, items, rating=None):
         return self.get_attribute("rate", item=items, rating=rating)
-        
+
 def get_catalog_by_name(name):
     """
     Grabs a catalog by name, if its there on the api key.
@@ -414,4 +414,3 @@ def list_catalogs(results=30, start=0):
     start = result['response']['start']
     total = result['response']['total']
     return ResultList(cats, start, total)
-
