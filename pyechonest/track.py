@@ -142,7 +142,7 @@ class Track(TrackProxy):
                     else:
                         raise Exception("Failed to create track analysis.")
 
-                analysis = json.loads(json_string)
+                analysis = json.loads(json_string.decode('utf-8'))
                 analysis_track = analysis.pop('track', {})
                 self.__dict__.update(analysis)
                 self.__dict__.update(analysis_track)
